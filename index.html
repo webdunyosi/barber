@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TM Barber Prime</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/locale/uz.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --card-border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #000000;
+            background-image: 
+                radial-gradient(at 40% 20%, rgb(0, 100, 0) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgb(0, 100, 0) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgb(0, 100, 0) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-morphism {
+            background: rgba(17, 17, 17, 0.7);
+            backdrop-filter: blur(12px);
+            border: var(--card-border);
+            box-shadow: var(--card-shadow);
+        }
+
+        .modal {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: rgba(17, 17, 17, 0.95);
+            backdrop-filter: blur(20px);
+            border-top-left-radius: 2rem;
+            border-top-right-radius: 2rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 50;
+            border-top: var(--card-border);
+        }
+
+        .modal.show {
+            bottom: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 40;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, lime 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-border {
+            position: relative;
+            background: rgba(17, 17, 17, 0.7);
+            backdrop-filter: blur(12px);
+        }
+
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, lime 0%, #ef4444 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        .service-card, .specialist-card, .time-slot {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover, .specialist-card:hover, .time-slot:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: lime;
+        }
+
+        .service-card.selected, .specialist-card.selected, .time-slot.selected {
+            background: rgb(0, 47, 0);
+            border-color: lime;
+        }
+        
+        /* User menu styles */
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            width: 12rem;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            z-index: 60;
+            animation: slideDown 0.2s ease-out forwards;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: white;
+            transition: all 0.2s ease;
+        }
+        
+        .user-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-menu-item i {
+            margin-right: 0.75rem;
+        }
+
+        .specialist-card.selected {
+            background: rgb(0, 47, 0);
+            border: 1px solid lime;
+        }
+
+        .green-gradient-border {
+            position: relative;
+            background: rgba(17, 17, 17, 0.7);
+            backdrop-filter: blur(12px);
+        }
+
+        .green-gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 glass-morphism z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl gradient-border flex items-center justify-center">
+                        <span class="text-xl font-bold gradient-text">TM</span>
+                    </div>
+                    <h1 class="text-xl font-bold gradient-text">BARBER PRIME</h1>
+                </div>
+                <button id="authButton" class="border-2 border-o px-6 py-2 border-[lime] rounded-xl gradient-border hover:scale-105 transition-transform relative">
+                    <span id="authButtonText">Kirish</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main class="pt-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div id="booking-summary" class="rounded-3xl glass-morphism p-6 mb-8 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold gradient-text">Sizning buyurtmangiz</h3>
+                <button id="cancel-booking" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-xl'></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="space-y-2">
+                    <p id="summary-specialist" class="flex justify-between"><span class="text-gray-400">Mutaxassis:</span> <span class="font-medium"></span></p>
+                    <p id="summary-datetime" class="flex justify-between"><span class="text-gray-400">Sana va vaqt:</span> <span class="font-medium"></span></p>
+                </div>
+                <div class="space-y-2">
+                    <p id="summary-services" class="flex justify-between"><span class="text-gray-400">Xizmatlar:</span> <span class="font-medium"></span></p>
+                    <p id="summary-total" class="flex justify-between"><span class="text-gray-400">Jami:</span> <span class="font-medium"></span></p>
+                </div>
+            </div>
+            <button id="complete-booking" class="w-full py-3 rounded-xl green-gradient-border hover:scale-105 transition-transform font-medium flex items-center justify-center">
+                <i class='bx bx-check-circle mr-2'></i> Soch olib bo'lindi
+            </button>
+        </div>
+
+        <section class="relative rounded-3xl overflow-hidden mb-12 glass-morphism h-[240px]">
+            <div class="relative z-10 p-8 sm:p-12">
+                <h2 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 gradient-text">
+                    TM BARBER PRIME
+                </h2>
+                <p class="text-xl text-gray-300 mb-8">Abdulla Qodiriy ko'chasi, 1</p>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div class="glass-morphism rounded-2xl p-6 card-hover">
+                <div class="w-12 h-12 rounded-xl gradient-border flex items-center justify-center mb-4">
+                    <i class='bx bx-user text-2xl'></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Mutaxassisni tanlash</h3>
+                <p class="text-gray-400 mb-4">Professional sartaroshlarimizdan birini tanlang</p>
+                <button onclick="showSection('specialists')" 
+                    class="w-full px-4 py-2 rounded-xl gradient-border  transition-transform">
+                    Tanlash
+                </button>
+            </div>
+
+            <div class="glass-morphism rounded-2xl p-6 card-hover">
+                <div class="w-12 h-12 rounded-xl gradient-border flex items-center justify-center mb-4">
+                    <i class='bx bx-calendar text-2xl'></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Vaqtni tanlash</h3>
+                <p class="text-gray-400 mb-4">O'zingizga qulay vaqtni tanlang</p>
+                <button onclick="showSection('datetime')" 
+                    class="w-full px-4 py-2 rounded-xl gradient-border transition-transform">
+                    Tanlash
+                </button>
+            </div>
+
+            <div class="glass-morphism rounded-2xl p-6 card-hover">
+                <div class="w-12 h-12 rounded-xl gradient-border flex items-center justify-center mb-4">
+                    <i class='bx bx-menu text-2xl'></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Xizmatlarni tanlash</h3>
+                <p class="text-gray-400 mb-4">Kerakli xizmatlarni tanlang</p>
+                <button onclick="showSection('services')" 
+                    class="w-full px-4 py-2 rounded-xl gradient-border  ">
+                    Tanlash
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <div id="specialists-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Mutaxassisni tanlash</h2>
+                <button onclick="hideModal('specialists-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <div id="specialists-container" class="space-y-4">
+            </div>
+            <button id="specialists-next" onclick="showSection('datetime')" 
+                class="w-full mt-6 px-6 py-3 rounded-xl gradient-border  transition-transform hidden">
+                Davom etish
+            </button>
+        </div>
+    </div>
+
+    <div id="datetime-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Vaqtni tanlash</h2>
+                <button onclick="hideModal('datetime-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <div id="calendar" class="glass-morphism rounded-xl p-4 mb-6">
+            </div>
+            <div id="time-slots" class="grid grid-cols-3 sm:grid-cols-4 gap-4">
+            </div>
+            <button id="datetime-next" onclick="showSection('services')" 
+                class="w-full mt-6 px-6 py-3 rounded-xl gradient-border  transition-transform hidden">
+                Davom etish
+            </button>
+        </div>
+    </div>
+
+    <div id="services-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Xizmatlarni tanlash</h2>
+                <button onclick="hideModal('services-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <div class="relative mb-6">
+                <i class='bx bx-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400'></i>
+                <input type="text" id="serviceSearch" placeholder="Xizmatni qidirish" 
+                    class="w-full pl-12 pr-4 py-3 rounded-xl glass-morphism">
+            </div>
+            <div id="services-container" class="space-y-4">
+            </div>
+            <div id="total-price-container" class="fixed bottom-0 left-0 right-0 glass-morphism p-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-lg">Jami:</span>
+                    <span id="total-price" class="text-2xl font-bold">0 so'm</span>
+                </div>
+                <button id="confirmServices" class="w-full py-3 rounded-xl gradient-border  transition-transform font-medium">
+                    Tasdiqlash
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Ro'yxatdan o'tish</h2>
+                <button onclick="hideModal('auth-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <form id="auth-form" class="space-y-6">
+                <div>
+                    <label for="firstName" class="block text-sm font-medium mb-2">Ism</label>
+                    <input type="text" id="firstName" required class="w-full px-4 py-3 rounded-xl glass-morphism">
+                </div>
+                <div>
+                    <label for="lastName" class="block text-sm font-medium mb-2">Familiya</label>
+                    <input type="text" id="lastName" required class="w-full px-4 py-3 rounded-xl glass-morphism">
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-medium mb-2">Telefon</label>
+                    <input type="tel" id="phone" required pattern="^\+998[0-9]{9}$" placeholder="+998" 
+                        class="w-full px-4 py-3 rounded-xl glass-morphism">
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="terms" required class="w-4 h-4 rounded glass-morphism">
+                    <label for="terms" class="text-sm text-gray-400">
+                        Shaxsiy ma'lumotlarni qayta ishlashga rozilik bildiraman
+                    </label>
+                </div>
+                <button type="submit" class="w-full py-3 rounded-xl gradient-border  transition-transform font-medium">
+                    Ro'yxatdan o'tish
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="cancel-confirmation-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Buyurtmani bekor qilish</h2>
+                <button onclick="hideModal('cancel-confirmation-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <p class="text-lg mb-8">Siz haqiqatan ham buyurtmani bekor qilmoqchimisiz?</p>
+            <div class="flex gap-4">
+                <button onclick="hideModal('cancel-confirmation-modal')" 
+                    class="flex-1 py-3 rounded-xl glass-morphism hover:bg-white/10 transition-colors">
+                    Yo'q
+                </button>
+                <button onclick="confirmCancellation()" 
+                    class="flex-1 py-3 rounded-xl gradient-border hover:scale-105 transition-transform">
+                    Ha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="complete-confirmation-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Buyurtmani bajarish</h2>
+                <button onclick="hideModal('complete-confirmation-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <p class="text-lg mb-8">Soch olish bajarildi va vaqt bo'shatilsinmi?</p>
+            <div class="flex gap-4">
+                <button onclick="hideModal('complete-confirmation-modal')" 
+                    class="flex-1 py-3 rounded-xl glass-morphism hover:bg-white/10 transition-colors">
+                    Yo'q
+                </button>
+                <button onclick="confirmCompletion()" 
+                    class="flex-1 py-3 rounded-xl green-gradient-border hover:scale-105 transition-transform">
+                    Ha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="logout-confirmation-modal" class="modal">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Hisobdan chiqish</h2>
+                <button onclick="hideModal('logout-confirmation-modal')" class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
+                    <i class='bx bx-x text-2xl'></i>
+                </button>
+            </div>
+            <p class="text-lg mb-8">Siz haqiqatan ham hisobingizdan chiqmoqchimisiz?</p>
+            <div class="flex gap-4">
+                <button onclick="hideModal('logout-confirmation-modal')" 
+                    class="flex-1 py-3 rounded-xl glass-morphism hover:bg-white/10 transition-colors">
+                    Yo'q
+                </button>
+                <button onclick="confirmLogout()" 
+                    class="flex-1 py-3 rounded-xl gradient-border hover:scale-105 transition-transform">
+                    Ha
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="overlay"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, addDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC8Yb9e5JQCkAOn1rjh2YR-And8ZOUgbco",
+            authDomain: "timebookingapp-c7eac.firebaseapp.com",
+            projectId: "timebookingapp-c7eac",
+            storageBucket: "timebookingapp-c7eac.appspot.com",
+            messagingSenderId: "168435239671",
+            appId: "1:168435239671:web:a2e5cc347a3bea036ae1f2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDb = db;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseDoc = doc;
+        window.firebaseSetDoc = setDoc;
+            
+        window.currentBookingId = null;
+    </script>
+
+<script src="src.js"></script>
+    
+</body>
+</html>
